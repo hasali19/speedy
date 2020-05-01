@@ -6,8 +6,13 @@ use speedtest::Client as TestClient;
 
 #[tokio::main]
 async fn main() {
+    // Load env vars from .env file.
+    dotenv::dotenv().ok();
+
     let client = create_test_client();
     let runner = Runner::create(client);
+
+    // Run test scheduler loop.
     Runner::run_scheduler(runner).await;
 }
 

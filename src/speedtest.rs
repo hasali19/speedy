@@ -1,4 +1,4 @@
-use std::process::Command;
+use tokio::process::Command;
 
 use anyhow::Result;
 use serde::Deserialize;
@@ -79,8 +79,11 @@ impl Client {
     }
 
     pub async fn run_test(&self) -> Result<TestResult> {
-        let output = Command::new(&self.path).arg("--format=json").output()?;
-        // println!("{}", String::from_utf8(output.stdout.clone()).unwrap());
+        let output = Command::new(&self.path)
+            .arg("--format=json")
+            .output()
+            .await?;
+
         Ok(serde_json::from_slice(&output.stdout)?)
     }
 }

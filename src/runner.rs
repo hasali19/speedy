@@ -3,7 +3,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
-use tokio::sync::Mutex;
+use async_std::sync::Mutex;
+use async_std::task;
 
 use crate::speedtest::{Client, TestResult};
 
@@ -50,10 +51,12 @@ impl Runner {
     }
 
     #[allow(dead_code)]
-    pub async fn try_run(runner: Arc<Runner>) -> Option<impl Future<Output = Result<TestResult>>> {
+    pub async fn try_run(runner: &Arc<Runner>) -> Option<impl Future<Output = Result<TestResult>>> {
         if !runner.set_running().await {
             return None;
         }
+
+        let runner = runner.clone();
 
         Some(async move { Runner::run_test(&runner).await })
     }
@@ -72,7 +75,7 @@ impl Runner {
 
             println!("Next test scheduled for a minute from now.");
 
-            tokio::time::delay_for(Duration::from_secs(60)).await;
+            task::sleep(Duration::from_secs(360)).await;
         }
     }
 }

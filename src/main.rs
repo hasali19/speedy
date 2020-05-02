@@ -30,17 +30,16 @@ fn main() -> Result<()> {
     // Load env vars from .env file.
     dotenv::dotenv().ok();
 
+    // Connect to database.
     let db = task::block_on(create_db());
 
     let client = create_test_client();
-    let runner = Runner::create(client);
+    let runner = create_test_runner(client, Arc::clone(&db));
 
     // Run test scheduler loop.
-    task::spawn(Runner::run_scheduler(
-        runner.clone(),
-        on_scheduled_test_success(db.clone()),
-    ));
+    task::spawn(runner::run_scheduler(runner.clone()));
 
+    // Run web server.
     task::block_on(run_server((db, runner)))
 }
 
@@ -65,13 +64,18 @@ fn create_test_client() -> TestClient {
     TestClient::from_path(&path)
 }
 
+fn create_test_runner(client: TestClient, db: Arc<Db>) -> Arc<Runner> {
+    let runner = Runner::new(client).on_success(on_test_success(db));
+    Arc::new(runner)
+}
+
 async fn create_db() -> Arc<Db> {
     let default_url = "sqlite::memory:".to_owned();
     let url = std::env::var("SPEEDY_DATABASE_URL").unwrap_or(default_url);
     Arc::new(Db::new(&url).await.unwrap())
 }
 
-fn on_scheduled_test_success(db: Arc<Db>) -> impl Fn(TestResult) {
+fn on_test_success(db: Arc<Db>) -> impl Fn(TestResult) {
     move |result| {
         let db = db.clone();
 

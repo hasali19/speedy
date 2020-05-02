@@ -78,7 +78,7 @@ impl Client {
         }
     }
 
-    pub async fn run_test(&self) -> Result<TestResult> {
+    pub fn run_test(&self) -> Result<TestResult> {
         let output = Command::new(&self.path).arg("--format=json").output()?;
         Ok(serde_json::from_slice(&output.stdout)?)
     }

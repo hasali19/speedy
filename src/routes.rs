@@ -1,8 +1,7 @@
-use async_std::task;
 use tide::http::{headers, StatusCode};
 use tide::{Request, Response, Result};
 
-use crate::runner::Runner;
+use crate::runner;
 use crate::State;
 
 pub async fn index(_: Request<State>) -> Result<Response> {
@@ -15,28 +14,19 @@ pub async fn index(_: Request<State>) -> Result<Response> {
 }
 
 pub async fn run_test(req: Request<State>) -> Result<Response> {
-    let (db, runner) = req.state();
-    let db = db.clone();
+    let (_, runner) = req.state();
 
-    // Try running a test. If a test is already running, return an error response.
-    let future = match Runner::try_run(runner).await {
-        None => {
-            return Ok(Response::new(StatusCode::Conflict)
-                .body_string("A test is already running.".to_owned()))
-        }
-        Some(future) => future,
+    // Try running a test in the background.
+    // If a test is already running, return an error response.
+    let response = if runner::try_run(runner).await {
+        Response::new(StatusCode::Ok).body_string("Ok".to_owned())
+    } else {
+        Response::new(StatusCode::Conflict)
+            .body("A test is already running.".as_bytes())
+            .set_header(headers::CONTENT_TYPE, "text/plain")
     };
 
-    // Run the test asynchronously, saving the results to the db on success.
-    task::spawn(async move {
-        if let Ok(result) = future.await {
-            if let Err(e) = db.create_result(&result.into()).await {
-                eprintln!("Database error: {}", e);
-            }
-        }
-    });
-
-    Ok(Response::new(StatusCode::Ok).body_string("Ok".to_owned()))
+    Ok(response)
 }
 
 pub async fn get_results(req: Request<State>) -> Result<Response> {

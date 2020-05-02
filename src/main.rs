@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_std::task;
+use tide::log::LogMiddleware;
 use tide::Route;
 
 use db::Db;
@@ -30,6 +31,8 @@ fn main() -> Result<()> {
     // Load env vars from .env file.
     dotenv::dotenv().ok();
 
+    init_logger();
+
     // Connect to database.
     let db = task::block_on(create_db());
 
@@ -46,6 +49,8 @@ fn main() -> Result<()> {
 async fn run_server(state: State) -> Result<()> {
     let mut app = tide::with_state(state);
 
+    app.middleware(LogMiddleware::new());
+
     app.at("/").get(routes::index);
 
     app.at("/api").route(|api| {
@@ -56,6 +61,13 @@ async fn run_server(state: State) -> Result<()> {
     app.listen("127.0.0.1:8000").await?;
 
     Ok(())
+}
+
+fn init_logger() {
+    if let None = std::env::var_os("RUST_LOG") {
+        std::env::set_var("RUST_LOG", "info");
+    }
+    pretty_env_logger::init_timed();
 }
 
 fn create_test_client() -> TestClient {

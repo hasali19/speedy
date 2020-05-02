@@ -64,7 +64,7 @@ fn run_test(runner: &Arc<Runner>) -> impl Future<Output = ()> {
                     on_success(result);
                 }
             }
-            Err(e) => eprintln!("Test failed: {}", e),
+            Err(e) => log::error!("Test failed: {}", e),
         }
     }
 }
@@ -80,13 +80,13 @@ pub async fn try_run(runner: &Arc<Runner>) -> bool {
 
 pub async fn run_scheduler(runner: Arc<Runner>) {
     loop {
-        println!("Running test...");
+        log::info!("Running test...");
 
         if !try_run(&runner).await {
-            println!("Test already running, skipping scheduled run.");
+            log::info!("A test is already running, skipping scheduled");
         }
 
-        println!("Next test scheduled for 5 minutes from now.");
+        log::info!("Next test scheduled for 5 minutes from now");
 
         task::sleep(Duration::from_secs(360)).await;
     }

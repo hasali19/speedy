@@ -48,7 +48,7 @@ async fn run_server(db: Arc<Db>, runner: Arc<Runner>) -> Result<()> {
             .route("/", web::get().to(routes::index))
             .service(
                 web::scope("/api")
-                    .route("/run_test", web::get().to(routes::run_test))
+                    .route("/run_test", web::post().to(routes::run_test))
                     .route("/results", web::get().to(routes::get_results)),
             )
     })

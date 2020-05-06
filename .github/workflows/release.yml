@@ -1,0 +1,20 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout git repo
+      uses: actions/checkout@v2
+
+    - name: Build docker image
+      uses: docker/build-push-action@v1
+      with:
+        repository: hasali19/speedy
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        tags: latest

@@ -1,5 +1,4 @@
 use anyhow::Result;
-use async_std::task;
 use serde::Serialize;
 use sqlx::{sqlite::SqliteRow, Row, SqlitePool};
 
@@ -71,10 +70,8 @@ impl Db {
 
         Ok(())
     }
-}
 
-impl Drop for Db {
-    fn drop(&mut self) {
-        task::block_on(self.0.close());
+    pub async fn close(&self) {
+        self.0.close().await
     }
 }

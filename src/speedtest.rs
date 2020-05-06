@@ -1,7 +1,6 @@
-use std::process::Command;
-
 use anyhow::Result;
 use serde::Deserialize;
+use tokio::process::Command;
 
 #[derive(Debug, Deserialize)]
 pub struct TestResult {
@@ -78,8 +77,12 @@ impl Client {
         }
     }
 
-    pub fn run_test(&self) -> Result<TestResult> {
-        let output = Command::new(&self.path).arg("--format=json").output()?;
+    pub async fn run_test(&self) -> Result<TestResult> {
+        let output = Command::new(&self.path)
+            .arg("--format=json")
+            .output()
+            .await?;
+
         Ok(serde_json::from_slice(&output.stdout)?)
     }
 }

@@ -5,60 +5,56 @@ mod speedtest;
 
 use std::sync::Arc;
 
+use actix_web::middleware::Logger;
+use actix_web::{web, App, HttpServer};
+
 use anyhow::Result;
-use async_std::task;
-use tide::log::LogMiddleware;
-use tide::Route;
 
 use db::Db;
 use runner::Runner;
 use speedtest::{Client as TestClient, TestResult};
 
-type State = (Arc<Db>, Arc<Runner>);
-
-trait RouteExt {
-    fn route(&mut self, f: impl Fn(&mut Self)) -> &mut Self;
-}
-
-impl<'a, S> RouteExt for Route<'a, S> {
-    fn route(&mut self, f: impl Fn(&mut Self)) -> &mut Self {
-        f(self);
-        self
-    }
-}
-
-fn main() -> Result<()> {
+#[actix_rt::main]
+async fn main() -> Result<()> {
     // Load env vars from .env file.
     dotenv::dotenv().ok();
 
     init_logger();
 
     // Connect to database.
-    let db = task::block_on(create_db());
+    let db = create_db().await;
 
     let client = create_test_client();
     let runner = create_test_runner(client, Arc::clone(&db));
 
     // Run test scheduler loop.
-    task::spawn(runner::run_scheduler(runner.clone()));
+    tokio::spawn(runner::run_scheduler(Arc::clone(&runner)));
 
     // Run web server.
-    task::block_on(run_server((db, runner)))
+    run_server(Arc::clone(&db), runner).await?;
+
+    // Ensure database connections are closed.
+    db.close().await;
+
+    Ok(())
 }
 
-async fn run_server(state: State) -> Result<()> {
-    let mut app = tide::with_state(state);
-
-    app.middleware(LogMiddleware::new());
-
-    app.at("/").get(routes::index);
-
-    app.at("/api").route(|api| {
-        api.at("/run_test").get(routes::run_test);
-        api.at("/results").get(routes::get_results);
-    });
-
-    app.listen("127.0.0.1:8000").await?;
+async fn run_server(db: Arc<Db>, runner: Arc<Runner>) -> Result<()> {
+    HttpServer::new(move || {
+        App::new()
+            .app_data(Arc::clone(&db))
+            .app_data(Arc::clone(&runner))
+            .wrap(Logger::default())
+            .route("/", web::get().to(routes::index))
+            .service(
+                web::scope("/api")
+                    .route("/run_test", web::get().to(routes::run_test))
+                    .route("/results", web::get().to(routes::get_results)),
+            )
+    })
+    .bind("127.0.0.1:8000")?
+    .run()
+    .await?;
 
     Ok(())
 }
@@ -92,7 +88,7 @@ fn on_test_success(db: Arc<Db>) -> impl Fn(TestResult) {
         let db = db.clone();
 
         // Save result to database.
-        task::spawn(async move {
+        tokio::spawn(async move {
             db.create_result(&result.into()).await.unwrap();
         });
     }

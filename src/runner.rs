@@ -1,9 +1,7 @@
-use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
 
-use async_std::sync::Mutex;
-use async_std::task;
+use tokio::sync::Mutex;
 
 use crate::speedtest::{Client, TestResult};
 
@@ -49,32 +47,29 @@ impl Runner {
     async fn set_idle(&self) {
         *self.is_running.lock().await = false;
     }
-}
 
-fn run_test(runner: &Arc<Runner>) -> impl Future<Output = ()> {
-    let runner = Arc::clone(&runner);
-    async move {
-        let result = runner.client.run_test();
+    async fn run_test(self: Arc<Runner>) {
+        let result = self.client.run_test().await;
 
-        runner.set_idle().await;
+        self.set_idle().await;
 
         match result {
             Ok(result) => {
-                if let Some(ref on_success) = runner.on_success {
+                if let Some(ref on_success) = self.on_success {
                     on_success(result);
                 }
             }
             Err(e) => log::error!("Test failed: {}", e),
         }
     }
-}
 
-pub async fn try_run(runner: &Arc<Runner>) -> bool {
-    if runner.set_running().await {
-        task::spawn(run_test(runner));
-        true
-    } else {
-        false
+    pub async fn try_run(self: &Arc<Runner>) -> bool {
+        if self.set_running().await {
+            tokio::spawn(Arc::clone(self).run_test());
+            true
+        } else {
+            false
+        }
     }
 }
 
@@ -82,12 +77,12 @@ pub async fn run_scheduler(runner: Arc<Runner>) {
     loop {
         log::info!("Running test...");
 
-        if !try_run(&runner).await {
+        if !runner.try_run().await {
             log::info!("A test is already running, skipping scheduled");
         }
 
         log::info!("Next test scheduled for 5 minutes from now");
 
-        task::sleep(Duration::from_secs(360)).await;
+        tokio::time::delay_for(Duration::from_secs(360)).await;
     }
 }

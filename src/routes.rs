@@ -1,37 +1,29 @@
-use tide::http::{headers, StatusCode};
-use tide::{Request, Response, Result};
+use std::sync::Arc;
 
-use crate::runner;
-use crate::State;
+use actix_web::{HttpRequest, HttpResponse, Responder};
 
-pub async fn index(_: Request<State>) -> Result<Response> {
+use crate::db::Db;
+use crate::runner::Runner;
+
+pub async fn index() -> impl Responder {
     let index_html: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/static/index.html"));
-    let response = Response::new(StatusCode::Ok)
-        .body(index_html.as_bytes())
-        .set_header(headers::CONTENT_TYPE, "text/html");
-
-    Ok(response)
+    HttpResponse::Ok().body(index_html)
 }
 
-pub async fn run_test(req: Request<State>) -> Result<Response> {
-    let (_, runner) = req.state();
+pub async fn run_test(req: HttpRequest) -> impl Responder {
+    let runner: &Arc<Runner> = req.app_data().unwrap();
 
     // Try running a test in the background.
     // If a test is already running, return an error response.
-    let response = if runner::try_run(runner).await {
-        Response::new(StatusCode::Ok).body_string("Ok".to_owned())
+    if runner.try_run().await {
+        HttpResponse::Ok().body("Ok")
     } else {
-        Response::new(StatusCode::Conflict)
-            .body("A test is already running.".as_bytes())
-            .set_header(headers::CONTENT_TYPE, "text/plain")
-    };
-
-    Ok(response)
+        HttpResponse::Conflict().body("A test is already running.")
+    }
 }
 
-pub async fn get_results(req: Request<State>) -> Result<Response> {
-    let (db, _) = req.state();
+pub async fn get_results(req: HttpRequest) -> impl Responder {
+    let db: &Arc<Db> = req.app_data().unwrap();
     let results = db.get_all_results().await.unwrap();
-    let response = Response::new(StatusCode::Ok).body_json(&results)?;
-    Ok(response)
+    HttpResponse::Ok().json(results)
 }

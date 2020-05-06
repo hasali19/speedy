@@ -83,6 +83,13 @@ impl Client {
             .output()
             .await?;
 
+        if log::log_enabled!(log::Level::Debug) {
+            log::debug!(
+                "test output: {}",
+                String::from_utf8(output.stdout.clone()).unwrap()
+            );
+        }
+
         Ok(serde_json::from_slice(&output.stdout)?)
     }
 }

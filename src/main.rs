@@ -3,6 +3,7 @@ mod routes;
 mod runner;
 mod speedtest;
 
+use std::env;
 use std::sync::Arc;
 
 use actix_web::middleware::Logger;
@@ -28,7 +29,7 @@ async fn main() -> Result<()> {
     let runner = create_test_runner(client, Arc::clone(&db));
 
     // Run test scheduler loop.
-    tokio::spawn(runner::run_scheduler(Arc::clone(&runner)));
+    run_scheduler(Arc::clone(&runner));
 
     // Run web server.
     run_server(Arc::clone(&db), runner).await?;
@@ -37,6 +38,12 @@ async fn main() -> Result<()> {
     db.close().await;
 
     Ok(())
+}
+
+fn run_scheduler(runner: Arc<Runner>) {
+    let default = |_| "0 0 * * * * *".to_owned();
+    let cron = env::var("SPEEDY_CRON").unwrap_or_else(default);
+    tokio::spawn(runner.run_scheduler(cron));
 }
 
 async fn run_server(db: Arc<Db>, runner: Arc<Runner>) -> Result<()> {
@@ -61,14 +68,14 @@ async fn run_server(db: Arc<Db>, runner: Arc<Runner>) -> Result<()> {
 
 fn init_logger() {
     if let None = std::env::var_os("RUST_LOG") {
-        std::env::set_var("RUST_LOG", "info");
+        env::set_var("RUST_LOG", "info");
     }
     pretty_env_logger::init_timed();
 }
 
 fn create_test_client() -> TestClient {
-    let default_path = "speedy".to_owned();
-    let path = std::env::var("SPEEDY_SPEEDTEST_PATH").unwrap_or(default_path);
+    let default = |_| "speedy".to_owned();
+    let path = env::var("SPEEDY_SPEEDTEST_PATH").unwrap_or_else(default);
     TestClient::from_path(&path)
 }
 
@@ -78,8 +85,8 @@ fn create_test_runner(client: TestClient, db: Arc<Db>) -> Arc<Runner> {
 }
 
 async fn create_db() -> Arc<Db> {
-    let default_url = "sqlite::memory:".to_owned();
-    let url = std::env::var("SPEEDY_DATABASE_URL").unwrap_or(default_url);
+    let default = |_| "sqlite::memory:".to_owned();
+    let url = env::var("SPEEDY_DATABASE_URL").unwrap_or_else(default);
     Arc::new(Db::new(&url).await.unwrap())
 }
 

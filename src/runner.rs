@@ -1,6 +1,7 @@
 use std::sync::Arc;
-use std::time::Duration;
 
+use chrono::Local;
+use cron::Schedule;
 use tokio::sync::Mutex;
 
 use crate::speedtest::{Client, TestResult};
@@ -56,6 +57,7 @@ impl Runner {
         match result {
             Ok(result) => {
                 if let Some(ref on_success) = self.on_success {
+                    log::debug!("Test successful: {:?}", result);
                     on_success(result);
                 }
             }
@@ -71,18 +73,22 @@ impl Runner {
             false
         }
     }
-}
 
-pub async fn run_scheduler(runner: Arc<Runner>) {
-    loop {
-        log::info!("Running test...");
+    pub async fn run_scheduler(self: Arc<Runner>, cron_expression: String) {
+        let schedule: Schedule = cron_expression.parse().unwrap();
 
-        if !runner.try_run().await {
-            log::info!("A test is already running, skipping scheduled");
+        for time in schedule.upcoming(Local) {
+            let now = Local::now();
+            let duration: chrono::Duration = time - now;
+
+            log::info!("Next test scheduled for {}", time);
+            tokio::time::delay_for(duration.to_std().unwrap()).await;
+
+            log::info!("Running test...");
+
+            if !self.try_run().await {
+                log::info!("A test is already running, skipping scheduled");
+            }
         }
-
-        log::info!("Next test scheduled for 5 minutes from now");
-
-        tokio::time::delay_for(Duration::from_secs(360)).await;
     }
 }

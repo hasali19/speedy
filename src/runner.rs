@@ -4,20 +4,20 @@ use chrono::Local;
 use cron::Schedule;
 use tokio::sync::Mutex;
 
-use crate::speedtest::{Client, TestResult};
+use crate::speedtest::{TestClient, TestResult};
 
 pub trait SuccessFn: Fn(TestResult) + Send + Sync {}
 
 impl<F: Fn(TestResult) + Send + Sync> SuccessFn for F {}
 
 pub struct Runner {
-    client: Client,
+    client: TestClient,
     is_running: Mutex<bool>,
     on_success: Option<Box<dyn SuccessFn>>,
 }
 
 impl Runner {
-    pub fn new(client: Client) -> Runner {
+    pub fn new(client: TestClient) -> Runner {
         Runner {
             client,
             is_running: Mutex::new(false),

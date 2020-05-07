@@ -13,7 +13,7 @@ use anyhow::Result;
 
 use db::Db;
 use runner::Runner;
-use speedtest::{Client as TestClient, TestResult};
+use speedtest::{TestClient, TestClientBuilder, TestResult};
 
 #[actix_rt::main]
 async fn main() -> Result<()> {
@@ -67,7 +67,7 @@ async fn run_server(db: Arc<Db>, runner: Arc<Runner>) -> Result<()> {
 }
 
 fn init_logger() {
-    if let None = std::env::var_os("RUST_LOG") {
+    if std::env::var_os("RUST_LOG").is_none() {
         env::set_var("RUST_LOG", "info");
     }
     pretty_env_logger::init_timed();
@@ -76,7 +76,14 @@ fn init_logger() {
 fn create_test_client() -> TestClient {
     let default = |_| "speedy".to_owned();
     let path = env::var("SPEEDY_SPEEDTEST_PATH").unwrap_or_else(default);
-    TestClient::from_path(&path)
+
+    let mut builder = TestClientBuilder::with_path(&path);
+
+    if env::var_os("SPEEDY_ACCEPT_AGREEMENTS").is_some() {
+        builder = builder.accept_license().accept_gdpr();
+    }
+
+    builder.build_client()
 }
 
 fn create_test_runner(client: TestClient, db: Arc<Db>) -> Arc<Runner> {

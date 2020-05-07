@@ -66,25 +66,62 @@ pub struct WebResult {
     pub url: String,
 }
 
-pub struct Client {
-    path: String,
+pub struct TestClient {
+    options: TestClientBuilder,
 }
 
-impl Client {
-    pub fn from_path(path: &str) -> Client {
-        Client {
+pub struct TestClientBuilder {
+    path: String,
+    accept_license: bool,
+    accept_gdpr: bool,
+}
+
+impl TestClientBuilder {
+    pub fn with_path(path: &str) -> Self {
+        TestClientBuilder {
             path: path.to_owned(),
+            accept_license: false,
+            accept_gdpr: false,
         }
     }
 
-    pub async fn run_test(&self) -> Result<TestResult> {
-        let output = Command::new(&self.path)
-            .arg("--format=json")
-            .output()
-            .await?;
+    pub fn accept_license(mut self) -> Self {
+        self.accept_license = true;
+        self
+    }
 
-        if log::log_enabled!(log::Level::Debug) {
-            log::debug!(
+    pub fn accept_gdpr(mut self) -> Self {
+        self.accept_gdpr = true;
+        self
+    }
+
+    pub fn build_client(self) -> TestClient {
+        TestClient::new(self)
+    }
+}
+
+impl TestClient {
+    pub fn new(options: TestClientBuilder) -> TestClient {
+        TestClient { options }
+    }
+
+    pub async fn run_test(&self) -> Result<TestResult> {
+        let mut command = Command::new(&self.options.path);
+
+        command.arg("--format=json");
+
+        if self.options.accept_license {
+            command.arg("--accept-license");
+        }
+
+        if self.options.accept_gdpr {
+            command.arg("--accept-gdpr");
+        }
+
+        let output = command.output().await.unwrap();
+
+        if log::log_enabled!(log::Level::Trace) {
+            log::trace!(
                 "test output: {}",
                 String::from_utf8(output.stdout.clone()).unwrap()
             );

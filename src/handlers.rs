@@ -44,12 +44,9 @@ struct ResultsListResponseMeta {
 }
 
 fn format_page_link(req: &HttpRequest, limit: i32, page: i32) -> String {
-    let connection = req.connection_info();
     format!(
-        "{}://{}{}?limit={}&page={}",
-        connection.scheme(),
-        connection.host(),
-        req.path(),
+        "{}?limit={}&page={}",
+        req.url_for("results", &[] as &[&str]).unwrap(),
         limit,
         page
     )

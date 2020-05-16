@@ -56,7 +56,11 @@ async fn run_server(db: Arc<Db>, runner: Arc<Runner>) -> Result<()> {
             .service(
                 web::scope("/api")
                     .route("/run_test", web::post().to(handlers::run_test))
-                    .route("/results", web::get().to(handlers::get_results)),
+                    .service(
+                        web::resource("/results")
+                            .name("results")
+                            .route(web::get().to(handlers::get_results)),
+                    ),
             )
     })
     .bind("0.0.0.0:8000")?

@@ -1,5 +1,5 @@
 mod db;
-mod routes;
+mod handlers;
 mod runner;
 mod speedtest;
 
@@ -52,11 +52,11 @@ async fn run_server(db: Arc<Db>, runner: Arc<Runner>) -> Result<()> {
             .app_data(Arc::clone(&db))
             .app_data(Arc::clone(&runner))
             .wrap(Logger::default())
-            .route("/", web::get().to(routes::index))
+            .route("/", web::get().to(handlers::index))
             .service(
                 web::scope("/api")
-                    .route("/run_test", web::post().to(routes::run_test))
-                    .route("/results", web::get().to(routes::get_results)),
+                    .route("/run_test", web::post().to(handlers::run_test))
+                    .route("/results", web::get().to(handlers::get_results)),
             )
     })
     .bind("0.0.0.0:8000")?

@@ -47,7 +47,7 @@ impl Db {
 
     #[allow(dead_code)]
     pub async fn get_all_results(&self) -> Result<Vec<TestResult>> {
-        let results = sqlx::query("SELECT * FROM results")
+        let results = sqlx::query("SELECT * FROM results ORDER BY timestamp DESC")
             .map(|row: SqliteRow| TestResult {
                 id: row.get(0),
                 timestamp: row.get(1),

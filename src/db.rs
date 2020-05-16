@@ -9,17 +9,23 @@ pub struct Db(SqlitePool);
 #[derive(Debug, Serialize)]
 pub struct TestResult {
     id: i32,
-    timestamp: String,
+    timestamp: i64,
     ping: f32,
     download: i32,
     upload: i32,
+}
+
+fn parse_to_unix_time(timestamp: &str) -> i64 {
+    chrono::DateTime::parse_from_rfc3339(timestamp)
+        .unwrap()
+        .timestamp()
 }
 
 impl From<speedtest::TestResult> for TestResult {
     fn from(result: speedtest::TestResult) -> Self {
         TestResult {
             id: 0,
-            timestamp: result.timestamp,
+            timestamp: parse_to_unix_time(&result.timestamp),
             ping: result.ping.latency,
             download: result.download.bandwidth,
             upload: result.upload.bandwidth,

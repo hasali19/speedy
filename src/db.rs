@@ -1,6 +1,7 @@
 use anyhow::Result;
 use serde::Serialize;
-use sqlx::{sqlite::SqliteRow, Row, SqlitePool};
+use sqlx::sqlite::{SqliteQueryAs, SqliteRow};
+use sqlx::{Row, SqlitePool};
 
 use crate::speedtest;
 
@@ -45,9 +46,10 @@ impl Db {
         Ok(db)
     }
 
-    #[allow(dead_code)]
-    pub async fn get_all_results(&self) -> Result<Vec<TestResult>> {
-        let results = sqlx::query("SELECT * FROM results ORDER BY timestamp DESC")
+    pub async fn get_results(&self, limit: i32, offset: i32) -> Result<Vec<TestResult>> {
+        let results = sqlx::query("SELECT * FROM results ORDER BY timestamp DESC LIMIT ? OFFSET ?")
+            .bind(limit)
+            .bind(offset)
             .map(|row: SqliteRow| TestResult {
                 id: row.get(0),
                 timestamp: row.get(1),
@@ -59,6 +61,14 @@ impl Db {
             .await?;
 
         Ok(results)
+    }
+
+    pub async fn get_results_count(&self) -> Result<i32> {
+        let (count,) = sqlx::query_as("SELECT COUNT(*) FROM results")
+            .fetch_one(&self.0)
+            .await?;
+
+        Ok(count)
     }
 
     pub async fn create_result(&self, result: &TestResult) -> Result<()> {

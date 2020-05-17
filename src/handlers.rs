@@ -32,7 +32,7 @@ pub struct ResultsListQuery {
 
 #[derive(Debug, Serialize)]
 struct ResultsListResponse {
-    results: Vec<db::TestResult>,
+    data: Vec<db::TestResult>,
     meta: ResultsListResponseMeta,
 }
 
@@ -79,7 +79,7 @@ pub async fn get_results(req: HttpRequest, query: Query<ResultsListQuery>) -> im
     };
 
     HttpResponse::Ok().json(ResultsListResponse {
-        results,
+        data: results,
         meta: ResultsListResponseMeta {
             count,
             prev: prev.map(|p| format_page_link(&req, limit, p)),

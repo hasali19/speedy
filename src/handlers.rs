@@ -7,11 +7,6 @@ use serde::{Deserialize, Serialize};
 use crate::db::{self, Db};
 use crate::runner::Runner;
 
-pub async fn index() -> impl Responder {
-    let index_html: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/static/index.html"));
-    HttpResponse::Ok().body(index_html)
-}
-
 pub async fn run_test(req: HttpRequest) -> impl Responder {
     let runner: &Arc<Runner> = req.app_data().unwrap();
 

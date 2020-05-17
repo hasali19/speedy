@@ -9,6 +9,7 @@ COPY client/ .
 RUN npm install && npm run build
 
 FROM debian:stable-slim
-COPY --from=rust-build /usr/local/cargo/bin/speedy /app/speedy
-COPY --from=node-build /app /app/client
-CMD ["/app/speedy"]
+WORKDIR /app
+COPY --from=rust-build /usr/local/cargo/bin/speedy ./speedy
+COPY --from=node-build /app/build ./client/build
+CMD ["./speedy"]

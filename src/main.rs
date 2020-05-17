@@ -6,6 +6,7 @@ mod speedtest;
 use std::env;
 use std::sync::Arc;
 
+use actix_files::Files;
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
 
@@ -52,7 +53,6 @@ async fn run_server(db: Arc<Db>, runner: Arc<Runner>) -> Result<()> {
             .app_data(Arc::clone(&db))
             .app_data(Arc::clone(&runner))
             .wrap(Logger::default())
-            .route("/", web::get().to(handlers::index))
             .service(
                 web::scope("/api")
                     .route("/run_test", web::post().to(handlers::run_test))
@@ -62,6 +62,7 @@ async fn run_server(db: Arc<Db>, runner: Arc<Runner>) -> Result<()> {
                             .route(web::get().to(handlers::get_results)),
                     ),
             )
+            .service(Files::new("/", "./client/build").index_file("index.html"))
     })
     .bind("0.0.0.0:8000")?
     .run()

@@ -1,8 +1,14 @@
-FROM rust:latest as builder
-WORKDIR /usr/src/speedy
+FROM rust:latest as rust-build
+WORKDIR /app
 COPY . .
 RUN cargo install --path .
 
+FROM node:latest as node-build
+WORKDIR /app
+COPY client/ .
+RUN npm install && npm run build
+
 FROM debian:stable-slim
-COPY --from=builder /usr/local/cargo/bin/speedy /usr/local/bin/speedy
-CMD ["speedy"]
+COPY --from=rust-build /usr/local/cargo/bin/speedy /app/speedy
+COPY --from=node-build /app /app/client
+CMD ["/app/speedy"]

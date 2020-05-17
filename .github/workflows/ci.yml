@@ -5,7 +5,7 @@ on:
   - pull_request
 
 jobs:
-  build:
+  build-backend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout git repo
@@ -13,6 +13,18 @@ jobs:
 
       - name: Build project
         run: cargo build --verbose
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout git repo
+        uses: actions/checkout@v2
+
+      - name: Build project
+        working-directory: ./client
+        run: |
+          npm ci
+          npm run build
 
   deploy:
     runs-on: ubuntu-latest

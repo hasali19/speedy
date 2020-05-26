@@ -48,6 +48,9 @@ fn run_scheduler(runner: Arc<Runner>) {
 }
 
 async fn run_server(db: Arc<Db>, runner: Arc<Runner>) -> Result<()> {
+    let host = env::var("SPEEDY_HTTP_HOST").unwrap_or_else(|_| "0.0.0.0".to_owned());
+    let port = env::var("SPEEDY_HTTP_PORT").map_or_else(|_| 8000, |v| v.parse().unwrap());
+
     HttpServer::new(move || {
         App::new()
             .app_data(Arc::clone(&db))
@@ -64,7 +67,7 @@ async fn run_server(db: Arc<Db>, runner: Arc<Runner>) -> Result<()> {
             )
             .service(Files::new("/", "./client/build").index_file("index.html"))
     })
-    .bind("0.0.0.0:8000")?
+    .bind(format!("{}:{}", host, port))?
     .run()
     .await?;
 

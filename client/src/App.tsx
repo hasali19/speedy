@@ -20,7 +20,7 @@ import {
 
 export default function App() {
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(3);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
   const [results, setResults] = useState<ResultsListResponse | null>(null);
   const [showAlert, setShowAlert] = useState(false);
 

@@ -51,7 +51,7 @@ export default function ResultsTable(props: Props) {
   } = props;
 
   const currentPage = props.currentPage || 0;
-  const rowsPerPage = props.rowsPerPage || 3;
+  const rowsPerPage = props.rowsPerPage || 25;
 
   function onChangePage(
     e: React.MouseEvent<HTMLButtonElement, MouseEvent> | null,
@@ -93,7 +93,7 @@ export default function ResultsTable(props: Props) {
                 page={currentPage}
                 onChangePage={onChangePage}
                 rowsPerPage={rowsPerPage}
-                rowsPerPageOptions={[3, 10, 25, 50, 100]}
+                rowsPerPageOptions={[10, 25, 50, 100]}
                 onChangeRowsPerPage={(e) =>
                   onChangeRowsPerPage &&
                   onChangeRowsPerPage(parseInt(e.target.value))

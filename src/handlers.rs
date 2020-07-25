@@ -48,7 +48,8 @@ fn format_page_link(req: &HttpRequest, limit: i32, page: i32) -> String {
 }
 
 fn page_count(item_count: i32, page_size: i32) -> i32 {
-    f32::ceil(item_count as f32 / page_size as f32) as i32
+    let count = f32::ceil(item_count as f32 / page_size as f32) as i32;
+    std::cmp::max(count, 1)
 }
 
 pub async fn get_results(req: HttpRequest, query: Query<ResultsListQuery>) -> impl Responder {

@@ -9,7 +9,7 @@ pub struct TestResult {
     pub download: Download,
     pub upload: Upload,
     #[serde(rename = "packetLoss")]
-    pub packet_loss: i32,
+    pub packet_loss: Option<i32>,
     pub isp: String,
     pub interface: Interface,
     pub server: Server,

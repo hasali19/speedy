@@ -100,7 +100,7 @@ fn create_test_runner(client: TestClient, db: Arc<Db>) -> Arc<Runner> {
 }
 
 async fn create_db() -> Arc<Db> {
-    let default = |_| "sqlite::memory:".to_owned();
+    let default = |_| "sqlite://speedy.db".to_owned();
     let url = env::var("SPEEDY_DATABASE_URL").unwrap_or_else(default);
     Arc::new(Db::new(&url).await.unwrap())
 }

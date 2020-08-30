@@ -15,6 +15,8 @@ export interface ResultsListResponse {
   };
 }
 
+export type RunnerStatus = "Idle" | "Running";
+
 export async function getResultsWithLimit(limit: number) {
   return getResults("/api/results?limit=" + limit);
 }
@@ -32,4 +34,9 @@ export async function runTest(): Promise<boolean | undefined> {
   } else if (res.status === 409) {
     return false;
   }
+}
+
+export async function getStatus(): Promise<RunnerStatus> {
+  const res = await fetch("/api/status");
+  return await res.json();
 }

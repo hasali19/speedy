@@ -83,3 +83,20 @@ pub async fn get_results(req: HttpRequest, query: Query<ResultsListQuery>) -> im
         },
     })
 }
+
+#[derive(Debug, Serialize)]
+pub enum Status {
+    Idle,
+    Running,
+}
+
+pub async fn get_status(req: HttpRequest) -> impl Responder {
+    let runner: &Arc<Runner> = req.app_data().unwrap();
+    let status = if runner.is_running() {
+        Status::Running
+    } else {
+        Status::Idle
+    };
+
+    HttpResponse::Ok().json(status)
+}

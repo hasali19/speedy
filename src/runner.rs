@@ -1,8 +1,7 @@
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use chrono::Local;
 use cron::Schedule;
-use tokio::sync::Mutex;
 
 use crate::speedtest::{TestClient, TestResult};
 
@@ -12,7 +11,7 @@ impl<F: Fn(TestResult) + Send + Sync> SuccessFn for F {}
 
 pub struct Runner {
     client: TestClient,
-    is_running: Mutex<bool>,
+    is_running: RwLock<bool>,
     on_success: Option<Box<dyn SuccessFn>>,
 }
 
@@ -20,7 +19,7 @@ impl Runner {
     pub fn new(client: TestClient) -> Runner {
         Runner {
             client,
-            is_running: Mutex::new(false),
+            is_running: RwLock::new(false),
             on_success: None,
         }
     }
@@ -31,12 +30,12 @@ impl Runner {
     }
 
     #[allow(dead_code)]
-    pub async fn is_running(&self) -> bool {
-        *self.is_running.lock().await
+    pub fn is_running(&self) -> bool {
+        *self.is_running.read().unwrap()
     }
 
-    async fn set_running(&self) -> bool {
-        let mut is_running = self.is_running.lock().await;
+    fn set_running(&self) -> bool {
+        let mut is_running = self.is_running.write().unwrap();
         if *is_running {
             false
         } else {
@@ -45,14 +44,14 @@ impl Runner {
         }
     }
 
-    async fn set_idle(&self) {
-        *self.is_running.lock().await = false;
+    fn set_idle(&self) {
+        *self.is_running.write().unwrap() = false;
     }
 
     async fn run_test(self: Arc<Runner>) {
         let result = self.client.run_test().await;
 
-        self.set_idle().await;
+        self.set_idle();
 
         match result {
             Ok(result) => {
@@ -66,7 +65,7 @@ impl Runner {
     }
 
     pub async fn try_run(self: &Arc<Runner>) -> bool {
-        if self.set_running().await {
+        if self.set_running() {
             tokio::spawn(Arc::clone(self).run_test());
             true
         } else {

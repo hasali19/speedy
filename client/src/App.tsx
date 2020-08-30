@@ -11,22 +11,30 @@ import {
   Button,
   Snackbar,
   LinearProgress,
+  CircularProgress,
 } from "@material-ui/core";
 
 import ResultsTable from "./components/ResultsTable";
 import {
   ResultsListResponse,
+  RunnerStatus,
   getResults,
   getResultsWithLimit,
   runTest,
+  getStatus,
 } from "./api";
 
 export default function App() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [status, setStatus] = useState<RunnerStatus>("Idle");
   const [results, setResults] = useState<ResultsListResponse | null>(null);
   const [error, setError] = useState<any | null>(null);
   const [showAlert, setShowAlert] = useState(false);
+
+  useEffect(() => {
+    setInterval(async () => setStatus(await getStatus()), 1000);
+  }, []);
 
   useEffect(() => {
     getResultsWithLimit(rowsPerPage)
@@ -112,6 +120,13 @@ export default function App() {
           <Typography variant="h6" style={{ flexGrow: 1 }}>
             Speedy
           </Typography>
+          {status === "Running" && (
+            <CircularProgress
+              size={30}
+              color="secondary"
+              style={{ margin: 16 }}
+            />
+          )}
           <Button variant="outlined" color="inherit" onClick={onRunTestClick}>
             Run test
           </Button>

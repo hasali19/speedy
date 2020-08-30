@@ -8,6 +8,7 @@ import {
   Container,
   Button,
   Snackbar,
+  LinearProgress,
 } from "@material-ui/core";
 import { Alert } from "@material-ui/lab";
 import ResultsTable from "./components/ResultsTable";
@@ -71,8 +72,7 @@ export default function App() {
       />
     );
   } else {
-    // TODO: Add a progress bar or something
-    content = <Typography>Loading...</Typography>;
+    content = <LinearProgress />;
   }
 
   return (

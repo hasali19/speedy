@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+
+import { Alert, AlertTitle } from "@material-ui/lab";
 import {
   IconButton,
   AppBar,
@@ -10,7 +12,7 @@ import {
   Snackbar,
   LinearProgress,
 } from "@material-ui/core";
-import { Alert } from "@material-ui/lab";
+
 import ResultsTable from "./components/ResultsTable";
 import {
   ResultsListResponse,
@@ -23,10 +25,18 @@ export default function App() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [results, setResults] = useState<ResultsListResponse | null>(null);
+  const [error, setError] = useState<any | null>(null);
   const [showAlert, setShowAlert] = useState(false);
 
   useEffect(() => {
-    getResultsWithLimit(rowsPerPage).then(setResults);
+    getResultsWithLimit(rowsPerPage)
+      .then((results) => {
+        setResults(results);
+        setError(null);
+      })
+      .catch((e) => {
+        setError(e);
+      });
   }, [rowsPerPage]);
 
   async function prevPage() {
@@ -55,7 +65,20 @@ export default function App() {
   }
 
   let content;
-  if (results) {
+  if (error) {
+    content = (
+      <Alert variant="filled" severity="error">
+        {process.env.NODE_ENV === "development" ? (
+          <>
+            <AlertTitle>Failed to load results</AlertTitle>
+            {error.toString()}
+          </>
+        ) : (
+          "Failed to load results"
+        )}
+      </Alert>
+    );
+  } else if (results) {
     content = (
       <ResultsTable
         results={results.data}

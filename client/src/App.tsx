@@ -117,7 +117,9 @@ export default function App() {
           </Button>
         </Toolbar>
       </AppBar>
-      <Container style={{ paddingTop: 24 }}>{content}</Container>
+      <Container style={{ paddingTop: 24, paddingBottom: 24 }}>
+        {content}
+      </Container>
       <Snackbar open={showAlert} autoHideDuration={2000} onClose={hideAlert}>
         <Alert variant="filled" severity="warning">
           A test is already running.
